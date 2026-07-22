@@ -1,0 +1,17 @@
+# Lokale Konfiguration und Secrets
+.env
+.env.*
+!.env.example
+
+# Python-Caches und Bytecode
+__pycache__/
+*.py[cod]
+
+# Betriebssystem-Dateien
+.DS_Store
+
+# Temporäre Microsoft-Office-Dateien
+~$*
+
+# Lokale Logs
+*.log
