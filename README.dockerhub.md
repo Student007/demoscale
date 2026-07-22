@@ -46,7 +46,7 @@ Erwartet werden die Container `demoscale`, `demoscale-producer-1`,
 Öffnen Sie <http://localhost:8080>. Die Oberfläche enthält Schaltflächen für
 5, 20 und 40 Testjobs. Der technische JSON-Endpunkt ist unter
 <http://localhost:8080/status> erreichbar.
-[Dashboard-Screenshot öffnen](https://hub.docker.com/r/danbu/demoscale/tags?name=dashboard-screenshot-1.0.0)
+[Dashboard-Screenshot öffnen](https://raw.githubusercontent.com/Student007/demoscale/refs/heads/main/docs/demoscale-dashboard.jpg)
 
 Der Screenshot zeigt vier aktive Worker, eine leere Queue und bereits
 verarbeitete Testjobs.
