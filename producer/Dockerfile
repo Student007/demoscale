@@ -11,6 +11,6 @@ RUN pip install --no-cache-dir --disable-pip-version-check -r requirements.txt \
     && useradd --uid 10001 --gid app --create-home --shell /usr/sbin/nologin app
 
 COPY producer/app.py .
-USER app
+USER 10001:10001
 EXPOSE 8000
 CMD ["python", "app.py"]

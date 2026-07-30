@@ -4,8 +4,8 @@ Demoscale zeigt horizontale Skalierung mit Docker Compose. Ein Dashboard nimmt
 Aufträge an, Redis dient als gemeinsame Queue und mehrere Worker verarbeiten
 die Aufträge parallel.
 
-Der Dashboard-Container heißt `demoscale`. Die Worker werden beim Skalieren
-automatisch benannt, zum Beispiel `demoscale-worker-1` bis
+Compose benennt die Container automatisch, zum Beispiel
+`demoscale-dashboard-1` und `demoscale-worker-1` bis
 `demoscale-worker-4`.
 
 ## Voraussetzungen
@@ -23,7 +23,7 @@ Docker-Hub-Namespace und den Image-Tag, der getestet werden soll:
 ```dotenv
 REGISTRY_USER=danbu
 IMAGE_REPOSITORY=demoscale
-IMAGE_TAG=1.0.0
+IMAGE_TAG=1.2.9
 DASHBOARD_PORT=8080
 JOB_COUNT=12
 PROCESS_SECONDS=2
@@ -37,7 +37,7 @@ docker compose up -d --no-build --scale worker=1
 docker compose ps
 ```
 
-Erwartet werden die Container `demoscale`, `demoscale-producer-1`,
+Erwartet werden die Container `demoscale-dashboard-1`, `demoscale-producer-1`,
 `demoscale-queue-1` und `demoscale-worker-1`. Redis und Producer sollten als
 `healthy` angezeigt werden.
 
@@ -110,5 +110,5 @@ docker compose down -v
 - Compose skaliert die Worker innerhalb einer einzelnen Docker Engine.
 - Die Worker verwenden dasselbe Image und greifen über den Service-Namen
   `queue` auf Redis zu.
-- Ein fester `container_name` für Worker würde die horizontale Skalierung
-  verhindern; deshalb ist nur der Dashboard-Container exakt `demoscale`.
+- Ein fester `container_name` würde wiederholbare Starts erschweren und ist
+  für skalierte Worker ungeeignet. Deshalb verwaltet Compose alle Namen.

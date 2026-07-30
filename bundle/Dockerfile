@@ -10,6 +10,6 @@ RUN pip install --no-cache-dir --disable-pip-version-check -r requirements.txt \
     && groupadd --gid 10001 app \
     && useradd --uid 10001 --gid app --create-home --shell /usr/sbin/nologin app
 
-COPY worker/app.py .
+COPY bundle/app.py .
 USER 10001:10001
 CMD ["python", "app.py"]

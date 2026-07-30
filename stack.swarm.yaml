@@ -17,8 +17,13 @@ services:
         condition: on-failure
 
   producer:
-    image: ${REGISTRY_USER}/${IMAGE_REPOSITORY:-demoscale}:demoscale-producer-${IMAGE_TAG:-1.0.0}
+    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-producer-${IMAGE_TAG:-1.2.9}
     environment:
+      ORCHESTRATOR: swarm
+      NODE_NAME: "{{.Node.Hostname}}"
+      NODE_ID: "{{.Node.ID}}"
+      TASK_NAME: "{{.Task.Name}}"
+      TASK_SLOT: "{{.Task.Slot}}"
       REDIS_HOST: queue
       QUEUE_KEY: jobs
       JOB_COUNT_DEFAULT: ${JOB_COUNT:-12}
@@ -28,8 +33,13 @@ services:
         condition: on-failure
 
   dashboard:
-    image: ${REGISTRY_USER}/${IMAGE_REPOSITORY:-demoscale}:demoscale-dashboard-${IMAGE_TAG:-1.0.0}
+    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-dashboard-${IMAGE_TAG:-1.2.9}
     environment:
+      ORCHESTRATOR: swarm
+      NODE_NAME: "{{.Node.Hostname}}"
+      NODE_ID: "{{.Node.ID}}"
+      TASK_NAME: "{{.Task.Name}}"
+      TASK_SLOT: "{{.Task.Slot}}"
       REDIS_HOST: queue
       QUEUE_KEY: jobs
       PRODUCER_URL: http://producer:8000
@@ -44,8 +54,14 @@ services:
         condition: on-failure
 
   worker:
-    image: ${REGISTRY_USER}/${IMAGE_REPOSITORY:-demoscale}:demoscale-worker-${IMAGE_TAG:-1.0.0}
+    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-worker-${IMAGE_TAG:-1.2.9}
     environment:
+      ORCHESTRATOR: swarm
+      NODE_NAME: "{{.Node.Hostname}}"
+      NODE_ID: "{{.Node.ID}}"
+      TASK_NAME: "{{.Task.Name}}"
+      TASK_SLOT: "{{.Task.Slot}}"
+      WORKER_NAME: "{{.Task.Name}}"
       REDIS_HOST: queue
       QUEUE_KEY: jobs
       PROCESS_SECONDS: ${PROCESS_SECONDS:-2}

@@ -1,8 +1,8 @@
 """Process jobs from the shared queue and publish a small heartbeat.
 
-Each Compose replica runs this same file. The container hostname becomes the
-worker identity, so the dashboard can show that multiple containers are
-actually processing jobs.
+Each Compose, Swarm, or Kubernetes replica runs this same file. The worker
+publishes its runtime placement alongside its queue heartbeat so the dashboard
+can show which node, pod/task, and process is handling a job.
 """
 
 import json
@@ -17,19 +17,51 @@ REDIS_HOST = os.environ.get("REDIS_HOST", "queue")
 QUEUE_KEY = os.environ.get("QUEUE_KEY", "jobs")
 PROCESS_SECONDS = float(os.environ.get("PROCESS_SECONDS", "2"))
 redis_client = redis.Redis(host=REDIS_HOST, port=6379, decode_responses=True)
-worker_name = os.environ.get("WORKER_NAME") or socket.gethostname()
+
+
+def runtime_env(name, default=""):
+    """Read orchestrator metadata and ignore unresolved Swarm templates."""
+    value = os.environ.get(name, default).strip()
+    if value.startswith("{{") and value.endswith("}}"):
+        return ""
+    return value
+
+
+ORCHESTRATOR = runtime_env("ORCHESTRATOR", "compose").lower()
+NODE_NAME = runtime_env("NODE_NAME")
+NODE_ID = runtime_env("NODE_ID")
+POD_NAME = runtime_env("POD_NAME")
+POD_NAMESPACE = runtime_env("POD_NAMESPACE")
+TASK_NAME = runtime_env("TASK_NAME")
+TASK_SLOT = runtime_env("TASK_SLOT")
+CONTAINER_NAME = socket.gethostname()
+worker_name = (
+    runtime_env("WORKER_NAME")
+    or POD_NAME
+    or TASK_NAME
+    or CONTAINER_NAME
+)
 worker_key = f"scale:worker:{worker_name}"
 
 
 def publish(status, current_job=""):
-    # Didaktischer Kern: Jede Replik veröffentlicht denselben kleinen
-    # Beobachtungssatz, ergänzt um ihren eigenen Container- bzw. Hostnamen.
+    # Jede Replik veröffentlicht denselben Beobachtungssatz, ergänzt um ihre
+    # Orchestrator- und Platzierungsdaten.
     processed = redis_client.hget(worker_key, "processed") or "0"
     redis_client.hset(
         worker_key,
         mapping={
             "name": worker_name,
-            "container": socket.gethostname(),
+            "orchestrator": ORCHESTRATOR,
+            "node": NODE_NAME,
+            "node_id": NODE_ID,
+            "pod": POD_NAME,
+            "namespace": POD_NAMESPACE,
+            "task": TASK_NAME,
+            "slot": TASK_SLOT,
+            "container": CONTAINER_NAME,
+            "process": "worker.py",
+            "pid": str(os.getpid()),
             "status": status,
             "current_job": current_job,
             "processed": processed,

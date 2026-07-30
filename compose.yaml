@@ -18,11 +18,14 @@ services:
   producer:
     # Die drei eigenen Images können lokal gebaut oder mit docker-bake.hcl
     # als Multi-Platform-Images auf Docker Hub veröffentlicht werden.
-    image: ${REGISTRY_USER:-local}/${IMAGE_REPOSITORY:-demoscale}:demoscale-producer-${IMAGE_TAG:-1.0.0}
+    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-producer-${IMAGE_TAG:-1.2.9}
+    pull_policy: always
     build:
       context: .
       dockerfile: producer/Dockerfile
     environment:
+      ORCHESTRATOR: compose
+      NODE_NAME: ${COMPOSE_NODE_NAME:-local-engine}
       REDIS_HOST: queue
       QUEUE_KEY: jobs
       JOB_COUNT_DEFAULT: ${JOB_COUNT:-12}
@@ -38,14 +41,14 @@ services:
       retries: 10
 
   dashboard:
-    # Der sichtbare Webcontainer bekommt bewusst den festen Namen demoscale.
-    # Worker bleiben ohne container_name, damit --scale worker=N möglich ist.
-    container_name: demoscale
-    image: ${REGISTRY_USER:-local}/${IMAGE_REPOSITORY:-demoscale}:demoscale-dashboard-${IMAGE_TAG:-1.0.0}
+    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-dashboard-${IMAGE_TAG:-1.2.9}
+    pull_policy: always
     build:
       context: .
       dockerfile: dashboard/Dockerfile
     environment:
+      ORCHESTRATOR: compose
+      NODE_NAME: ${COMPOSE_NODE_NAME:-local-engine}
       REDIS_HOST: queue
       QUEUE_KEY: jobs
       PRODUCER_URL: http://producer:8000
@@ -59,11 +62,14 @@ services:
         condition: service_healthy
 
   worker:
-    image: ${REGISTRY_USER:-local}/${IMAGE_REPOSITORY:-demoscale}:demoscale-worker-${IMAGE_TAG:-1.0.0}
+    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-worker-${IMAGE_TAG:-1.2.9}
+    pull_policy: always
     build:
       context: .
       dockerfile: worker/Dockerfile
     environment:
+      ORCHESTRATOR: compose
+      NODE_NAME: ${COMPOSE_NODE_NAME:-local-engine}
       REDIS_HOST: queue
       QUEUE_KEY: jobs
       PROCESS_SECONDS: ${PROCESS_SECONDS:-2}
@@ -74,10 +80,6 @@ services:
 
 volumes:
   queue-data:
-    # Der feste Named-Volume-Name macht den Zustand in docker volume inspect
-    # sichtbar und erleichtert die Gegenüberstellung von down und down -v.
-    name: demoscale-queue
 
 networks:
   scale-net:
-    name: demoscale-net

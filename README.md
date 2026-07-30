@@ -1,193 +1,82 @@
-# Demoscale – Docker-Skalierungsdemo
+# Demoscale – technische Projektquelle
 
-Diese Demo zeigt horizontale Skalierung mit Docker Compose: Ein Dashboard nimmt
-Aufträge an, ein Producer legt sie in Redis ab und mehrere identische Worker
-holen die Aufträge aus derselben Queue. Im Browser werden Queue-Länge,
-verarbeitete Jobs und die einzelnen Worker-Container sichtbar.
+Dieses Repository enthält den Quellcode, die Container-Builds und die
+Kubernetes-Manifeste der Docker-Skalierungsdemo.
 
-Die Demo ist ein lokales Lehrbeispiel, kein produktionsfertiger Queue- oder
-Monitoringdienst.
+Das bewusst kleine Studierenden-Paket mit nur einer `compose.yaml` liegt unter
+[`Student007/demoscaler`](https://github.com/Student007/demoscaler).
 
-## Stand der Demo
+## Bestandteile
 
-Die aktuelle Struktur ist vollständig für die lokale Untersuchung vorbereitet:
+- `dashboard`: Browseroberfläche und Statusanzeige
+- `producer`: erzeugt Aufträge für die Redis-Queue
+- `worker`: verarbeitet Aufträge aus der Queue
+- `bundle`: Task-Container für Kubernetes-Multi-Container-Pods
+- `kubernetes`: Kustomize-Manifeste für Docker Desktop Kubernetes/KIND
+- `compose.yaml`: lokaler Entwicklungs- und Compose-Test
+- `stack.swarm.yaml`: optionale Swarm-Variante
+- `docker-bake.hcl`: Multi-Platform-Builds für Docker Hub
 
-- `queue` verwendet Redis 7.4.2 mit AOF und einem persistenten Named Volume.
-- `producer`, `dashboard` und `worker` werden aus eigenen Dockerfiles gebaut.
-- Die Worker sind zustandsarm und können mit `--scale worker=N` vervielfacht
-  werden.
-- Healthchecks und `depends_on` mit Health-Bedingung steuern den Compose-Start.
-- Die eigenen Images können mit Buildx Bake als `linux/amd64`- und
-  `linux/arm64`-Images veröffentlicht werden.
-- `stack.swarm.yaml` zeigt den optionalen Transfer auf Docker Swarm.
-
-Der Webcontainer heißt exakt `demoscale`. Die automatisch erzeugten Worker
-heißen beispielsweise `demoscale-worker-1` bis `demoscale-worker-4`. Ein fester
-`container_name` für Worker wäre ungeeignet, weil Docker dann keine mehreren
-Replikas mit demselben Namen starten könnte.
-
-## Voraussetzungen
-
-- Docker Desktop oder Docker Engine
-- Docker Compose v2
-- für den Registry-Push: ein Docker-Hub-Konto und aktiviertes Buildx
-
-Die Befehle in dieser README werden aus diesem Ordner ausgeführt:
+## Lokal entwickeln
 
 ```bash
-cd begleitmaterial/docker-skalierungsdemo
-```
-
-## Lokal starten
-
-```bash
-cp .env.example .env
-docker compose config
-docker compose up -d --build --scale worker=1
+docker compose up -d --build --scale worker=4
 docker compose ps
 ```
 
-Öffnen Sie anschließend <http://localhost:8080>. Der Port kann in `.env` über
-`DASHBOARD_PORT` geändert werden. Der technische JSON-Endpunkt ist unter
-<http://localhost:8080/status> erreichbar.
+Das Dashboard ist anschließend unter <http://localhost:8080> erreichbar.
 
-## Skalierung beobachten
+## Kubernetes/KIND
 
-Erzeugen Sie Jobs in der Browser-GUI oder per Kommandozeile:
+Die Manifeste können lokal angewendet werden:
 
 ```bash
-curl "http://localhost:8080/enqueue?n=20"
-docker compose logs --tail=30 worker
-docker compose up -d --scale worker=4
-curl "http://localhost:8080/enqueue?n=40"
-docker compose ps
-docker compose logs --tail=50 worker
+kubectl config use-context docker-desktop
+kubectl apply -k kubernetes/
+kubectl -n demoscale wait --for=condition=Available deployment --all --timeout=180s
+kubectl -n demoscale port-forward service/dashboard 8080:8080
 ```
 
-Die vier Worker verwenden dasselbe Image, laufen aber in eigenen Containern.
-Alle greifen per Compose-Service-DNS auf `queue:6379` zu; feste Container-IP-
-Adressen sind nicht erforderlich. `BRPOP` blockiert, bis ein Auftrag vorhanden
-ist. `PROCESS_SECONDS` in `.env` steuert die simulierte Bearbeitungszeit.
-
-## Wichtige Untersuchungsbefehle
+Für das Studierenden-Paket werden sie fest versioniert direkt aus diesem
+Repository geladen:
 
 ```bash
-docker compose config
-docker compose ps
-docker compose logs --tail=50 worker
-docker compose exec --index 1 worker sh
-docker inspect demoscale
-docker volume inspect demoscale-queue
+kubectl apply -k 'https://github.com/Student007/demoscale//kubernetes?ref=1.2.9'
 ```
 
-`docker compose down` entfernt Container und Netzwerk, lässt das Named Volume
-aber bestehen. `docker compose down -v` entfernt zusätzlich `demoscale-queue`
-und damit den gespeicherten Redis-Zustand.
+## Images veröffentlichen
 
-## Images und Docker Hub
-
-Die Demo besteht aus drei eigenen Images:
-
-| Dienst | Tag im Docker-Hub-Repository `danbu/demoscale` | Aufgabe |
-|---|---|---|
-| `dashboard` | `demoscale-dashboard-1.0.0` | Browser-GUI und Status |
-| `producer` | `demoscale-producer-1.0.0` | Aufträge erzeugen |
-| `worker` | `demoscale-worker-1.0.0` | Aufträge verarbeiten |
-
-`queue` verwendet weiterhin das offizielle Image `redis:7.4.2-alpine3.21`.
-Ein Docker-Hub-Repository kann mehrere Tags aufnehmen; dadurch bleiben die
-drei Dienste im Repository `demoscale` getrennt adressierbar.
-Die ausführbare Docker-Hub-Beschreibung steht in
-[`README.dockerhub.md`](README.dockerhub.md).
-
-### Multi-Platform-Images bauen und pushen
-
-Erstellen Sie auf Docker Hub ein Repository mit dem Namen `demoscale` (Docker Hub:
-`My Hub` → `Create repository`). Verwenden Sie für die drei Dienste die
-unterschiedlichen Tag-Präfixe. Bei `docker login` ist ein Docker-Hub-
-Access-Token als Passwort die sichere Wahl.
+Version `1.2.9` veröffentlicht vier Images für `linux/amd64` und
+`linux/arm64`:
 
 ```bash
-export REGISTRY_USER=danbu
-export IMAGE_REPOSITORY=demoscale
-export IMAGE_TAG=1.0.0
-
-docker login
-docker buildx create --name demoscale-builder --driver docker-container --use
+docker login --username danbu
+docker buildx use demoscale-builder
 docker buildx inspect --bootstrap
 docker buildx bake --push
 ```
 
-Der Bake-Build veröffentlicht jeweils `linux/amd64` und `linux/arm64`.
-Prüfen Sie danach zum Beispiel:
+Veröffentlicht werden:
+
+```text
+danbu/demoscale:demoscale-dashboard-1.2.9
+danbu/demoscale:demoscale-producer-1.2.9
+danbu/demoscale:demoscale-worker-1.2.9
+danbu/demoscale:demoscale-bundle-task-1.2.9
+```
+
+## Tests
 
 ```bash
-docker buildx imagetools inspect \
-  "$REGISTRY_USER/$IMAGE_REPOSITORY:demoscale-worker-$IMAGE_TAG"
+docker compose config
+docker buildx bake --print
+python3 -m py_compile dashboard/app.py producer/app.py worker/app.py bundle/app.py
+kubectl kustomize kubernetes/
 ```
 
-Wenn der Builder bereits existiert, verwenden Sie statt `docker buildx create`
-einfach `docker buildx use demoscale-builder`.
+## Lizenz
 
-### Demo mit den veröffentlichten Images starten
+Copyright © 2026 [Daniel Bunzendahl](https://www.linkedin.com/in/daniel-bunzendahl/).
 
-Setzen Sie in `.env` den Docker-Hub-Namespace und den veröffentlichten Tag:
-
-```dotenv
-REGISTRY_USER=danbu
-IMAGE_REPOSITORY=demoscale
-IMAGE_TAG=1.0.0
-```
-
-Laden und starten Sie anschließend ohne lokalen Neubau:
-
-```bash
-docker compose pull
-docker compose up -d --no-build --scale worker=4
-docker compose ps
-```
-
-Für die lokale Entwicklung genügt dagegen `docker compose up -d --build`.
-
-## Mehrere physische Rechner: optionaler Swarm-Transfer
-
-Compose skaliert auf einer einzelnen Docker Engine. Für mehrere Hosts müssen
-die drei Images aus Docker Hub erreichbar sein:
-
-```bash
-export REGISTRY_USER=danbu
-export IMAGE_REPOSITORY=demoscale
-export IMAGE_TAG=1.0.0
-docker swarm init --advertise-addr <manager-ip>
-docker stack deploy -c stack.swarm.yaml demoscale
-docker service ps demoscale_worker
-docker service scale demoscale_worker=4
-```
-
-Das Redis-Volume ist lokal und damit nicht automatisch hostübergreifend nutzbar.
-Für einen echten Mehrhost-Betrieb braucht Redis Shared Storage oder eine
-bewusste Platzierung auf einem Knoten.
-
-## Aufräumen
-
-```bash
-docker compose down
-docker compose down -v
-docker buildx prune
-```
-
-Der zweite Compose-Befehl löscht bewusst den Queue-Zustand; der letzte Befehl
-bereinigt nicht mehr benötigte Build-Cache-Daten.
-
-## Dateien
-
-| Datei | Zweck |
-|---|---|
-| `compose.yaml` | lokale Services, Netzwerk, Healthchecks und Skalierung |
-| `dashboard/app.py` | Browser-GUI und `/status` |
-| `producer/app.py` | HTTP-Endpunkt und Redis-Queue |
-| `worker/app.py` | blockierender Queue-Konsument und Heartbeat |
-| `docker-bake.hcl` | Multi-Platform-Build und Push der drei Images |
-| `stack.swarm.yaml` | optionales Swarm-Manifest |
-| `.env.example` | lokale Konfigurationsvorlage |
-| `README.dockerhub.md` | Text für die Docker-Hub-Repository-Übersicht |
+Das Projekt steht unter der [Apache License 2.0](LICENSE). Ergänzende Hinweise
+enthält [NOTICE](NOTICE).
