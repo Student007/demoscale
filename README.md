@@ -38,15 +38,20 @@ kubectl -n demoscale port-forward service/dashboard 8080:8080
 ```
 
 Für das Studierenden-Paket werden sie fest versioniert direkt aus diesem
-Repository geladen:
+Repository geladen. Diese Kustomize-URL setzt `git` im `PATH` voraus:
 
 ```bash
-kubectl apply -k 'https://github.com/Student007/demoscale//kubernetes?ref=1.2.9'
+kubectl apply -k 'https://github.com/Student007/demoscale//kubernetes?ref=1.2.10'
 ```
+
+Windows PowerShell 5.1 unterstützt `&&` nicht. Das Dashboard bietet deshalb
+eine mehrzeilige PowerShell-Installation an: Sie lädt das Release als ZIP,
+wendet dessen lokales Kustomize-Verzeichnis ohne Git an und bricht nach einem
+fehlgeschlagenen nativen Befehl ab, statt die abhängigen Schritte auszuführen.
 
 ## Images veröffentlichen
 
-Version `1.2.9` veröffentlicht vier Images für `linux/amd64` und
+Version `1.2.10` veröffentlicht vier Images für `linux/amd64` und
 `linux/arm64`:
 
 ```bash
@@ -59,10 +64,10 @@ docker buildx bake --push
 Veröffentlicht werden:
 
 ```text
-danbu/demoscale:demoscale-dashboard-1.2.9
-danbu/demoscale:demoscale-producer-1.2.9
-danbu/demoscale:demoscale-worker-1.2.9
-danbu/demoscale:demoscale-bundle-task-1.2.9
+danbu/demoscale:demoscale-dashboard-1.2.10
+danbu/demoscale:demoscale-producer-1.2.10
+danbu/demoscale:demoscale-worker-1.2.10
+danbu/demoscale:demoscale-bundle-task-1.2.10
 ```
 
 ## Tests

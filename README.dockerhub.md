@@ -23,7 +23,7 @@ Docker-Hub-Namespace und den Image-Tag, der getestet werden soll:
 ```dotenv
 REGISTRY_USER=danbu
 IMAGE_REPOSITORY=demoscale
-IMAGE_TAG=1.2.9
+IMAGE_TAG=1.2.10
 DASHBOARD_PORT=8080
 JOB_COUNT=12
 PROCESS_SECONDS=2

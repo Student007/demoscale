@@ -7,7 +7,7 @@ variable "IMAGE_REPOSITORY" {
 }
 
 variable "IMAGE_TAG" {
-  default = "1.2.9"
+  default = "1.2.10"
 }
 
 group "default" {

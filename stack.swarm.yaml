@@ -17,7 +17,7 @@ services:
         condition: on-failure
 
   producer:
-    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-producer-${IMAGE_TAG:-1.2.9}
+    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-producer-${IMAGE_TAG:-1.2.10}
     environment:
       ORCHESTRATOR: swarm
       NODE_NAME: "{{.Node.Hostname}}"
@@ -33,7 +33,7 @@ services:
         condition: on-failure
 
   dashboard:
-    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-dashboard-${IMAGE_TAG:-1.2.9}
+    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-dashboard-${IMAGE_TAG:-1.2.10}
     environment:
       ORCHESTRATOR: swarm
       NODE_NAME: "{{.Node.Hostname}}"
@@ -54,7 +54,7 @@ services:
         condition: on-failure
 
   worker:
-    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-worker-${IMAGE_TAG:-1.2.9}
+    image: ${REGISTRY_USER:-danbu}/${IMAGE_REPOSITORY:-demoscale}:demoscale-worker-${IMAGE_TAG:-1.2.10}
     environment:
       ORCHESTRATOR: swarm
       NODE_NAME: "{{.Node.Hostname}}"
