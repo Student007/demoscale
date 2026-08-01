@@ -44,10 +44,12 @@ Repository geladen. Diese Kustomize-URL setzt `git` im `PATH` voraus:
 kubectl apply -k 'https://github.com/Student007/demoscale//kubernetes?ref=1.2.10'
 ```
 
-Windows PowerShell 5.1 unterstützt `&&` nicht. Das Dashboard bietet deshalb
-eine mehrzeilige PowerShell-Installation an: Sie lädt das Release als ZIP,
-wendet dessen lokales Kustomize-Verzeichnis ohne Git an und bricht nach einem
-fehlgeschlagenen nativen Befehl ab, statt die abhängigen Schritte auszuführen.
+Das Dashboard erkennt das Client-Betriebssystem und zeigt getrennte
+Copy-&-Paste-Blöcke für macOS/Linux sowie Windows PowerShell. Beide laden das
+Release als ZIP und wenden dessen lokales Kustomize-Verzeichnis ohne Git an.
+PowerShell 5.1 erhält dabei keine `&&`-Operatoren; unter macOS/Linux wird eine
+zsh-/bash-kompatible Befehlskette verwendet. Die Auswahl kann in der GUI
+jederzeit manuell umgeschaltet werden.
 
 ## Images veröffentlichen
 
